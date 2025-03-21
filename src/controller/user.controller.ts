@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
 import User, { IUser } from "../model/user.schema";
-import { UserDTO } from "../dto/user.dto";
+import { UserDto } from "../dto/user.dto";
 
 export const googleLogin = async (req: any, res: Response) => {
   try {
     const uid = req.user?.uid as string;
-    const { email, name }: Partial<UserDTO> = req.body;
+    const { email, name }: Partial<UserDto> = req.body;
     if (!email || !uid) {
       res.send(errorResponse(400, "Bad Request"));
       return;

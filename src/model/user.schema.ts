@@ -1,18 +1,22 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { UserDTO } from "../dto/user.dto";
+import { UserDto } from "../dto/user.dto";
 import { AuthProviders, UserRole } from "../lib/constants";
 
-export interface IUser extends UserDTO, Document {}
+export interface IUser extends UserDto, Document {}
 
-const UserSchema = new Schema<IUser>(
+const userSchema = new Schema<IUser>(
   {
-    uid: { type: String, required: true, unique: true },
+    uid: { type: String, required: true, unique: true, index: true },
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, index: true },
+    contact: {
+      type: String,
+    },
     role: {
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.USER,
+      required: true,
     },
     profileImage: { type: String, default: "" },
     authProvider: {
@@ -20,8 +24,23 @@ const UserSchema = new Schema<IUser>(
       enum: Object.values(AuthProviders),
       required: true,
     },
+    applications: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: "Application",
+      },
+    ],
+    age: {
+      type: Number,
+      default: 0,
+    },
+    location: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model<IUser>("User", UserSchema);
+userSchema.index({ email: 1, uid: 1 });
+export default mongoose.model<IUser>("User", userSchema);
