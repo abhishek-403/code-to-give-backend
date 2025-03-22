@@ -27,3 +27,14 @@ export enum Availabitity {
   WEEKDAYS = "weekdays",
   BOTH = "both",
 }
+export enum VolunteerDomains {
+  EDUCATION = "education",
+  BLOG = "blog",
+  CULTURE = "culture",
+  REHABILITATION = "rehabilitation",
+  ENVIRONMENT = "environment",
+  AUDIO_RECORDING = "audio_recording",
+  FIELD_WORK = "field_work",
+  SPORTS = "sports",
+  VIEWER = "viewer",
+}

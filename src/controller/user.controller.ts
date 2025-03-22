@@ -36,3 +36,26 @@ export const googleLogin = async (req: any, res: Response) => {
     return;
   }
 };
+
+export const getUserById = async (req: any, res: Response) => {
+  try {
+    const { uid } = req.user;
+    if (!uid) {
+      res.send(errorResponse(400, "Uid required"));
+      return;
+    }
+
+    const user = await User.findOne({ uid });
+
+    if (!user) {
+      res.send(errorResponse(404, "Not found"));
+      return;
+    }
+
+    res.send(successResponse(200, user));
+  } catch (error) {
+
+    res.send(errorResponse(500, "Internal Error"));
+    return;
+  }
+};
