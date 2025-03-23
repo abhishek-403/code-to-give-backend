@@ -1,11 +1,13 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { AvailabilityType } from "./event.dto";
+import mongoose, { Document } from "mongoose";
 import { ApplicationStatus } from "../lib/constants";
-
+import { AvailabilityType } from "./event.dto";
 
 export interface IApplication extends Document {
   _id: mongoose.Types.ObjectId;
   eventId: mongoose.Types.ObjectId;
+  applicantName: string;
+  applicantPhone: string;
+  applicantEmail: string;
   applicantId: mongoose.Types.ObjectId;
   volunteeringDomain: mongoose.Types.ObjectId;
   status: ApplicationStatus;
@@ -18,7 +20,6 @@ export interface IApplication extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
-
 
 // DTOs
 export interface CreateApplicationDto {

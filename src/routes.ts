@@ -3,11 +3,14 @@ import {
   createApplication,
   deleteApplication,
   getApplication,
+  getMyActiveApplications,
   getMyApplications,
   updateApplication,
 } from "./controller/application.controller";
 import {
+  createBulkEvent,
   createEvent,
+  createVolunteeringDomain,
   deleteEvent,
   editEvent,
   getActiveEvents,
@@ -35,6 +38,18 @@ router.post(
   authorizeRole(UserRole.WEBMASTER),
   createEvent
 );
+router.post(
+  "/event-bulk",
+  requireUserMiddleware,
+  authorizeRole(UserRole.WEBMASTER),
+  createBulkEvent
+);
+router.post(
+  "/event-volunteering-domain",
+  requireUserMiddleware,
+  authorizeRole(UserRole.WEBMASTER),
+  createVolunteeringDomain
+);
 router.put(
   "/event/:id",
   requireUserMiddleware,
@@ -53,9 +68,9 @@ router.delete(
 // Application Routes
 
 router.post("/application", requireUserMiddleware, createApplication);
+router.get("/application", requireUserMiddleware, getMyActiveApplications);
 router.put("/applicationnt/:id", requireUserMiddleware, updateApplication);
 router.get("/event/:id", requireUserMiddleware, getApplication);
-router.get("/events", requireUserMiddleware, getMyApplications);
 router.delete("/event/:id", requireUserMiddleware, deleteApplication);
 
 export default router;

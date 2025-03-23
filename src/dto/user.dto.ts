@@ -1,15 +1,17 @@
-import { Document } from 'mongoose';
-import { UserRole } from '../lib/constants';
+import { Document, Types } from "mongoose";
+import { AuthProviders, UserRole } from "../lib/constants";
 export interface IUser extends Document {
   uid: string;
   email: string;
   displayName: string;
   profileImage?: string;
   role: UserRole;
-  authProvider: 'email' | 'google';
+  authProvider: AuthProviders;
   age?: number;
   location?: string;
   interests?: string[];
+  myApplications?: Types.ObjectId[];
+  myEvents?: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,7 +22,7 @@ export interface CreateUserDto {
   displayName: string;
   profileImage?: string;
   role?: UserRole;
-  authProvider: 'email' | 'google';
+  authProvider: AuthProviders;
   age?: number;
   location?: string;
   interests?: string[];

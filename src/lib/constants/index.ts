@@ -1,40 +1,43 @@
 export enum UserRole {
-  USER = "user",
-  WEBMASTER = "webmaster",
-  ADMIN = "admin",
+  USER = "User",
+  WEBMASTER = "Web master",
+  ADMIN = "Admin",
 }
 
 export enum AuthProviders {
-  EMAIL_PASSWORD = "email_password",
-  GOOGLE = "google",
+  EMAIL_PASSWORD = "Email & Password",
+  GOOGLE = "Google",
 }
 
 export enum FeedBackSentiment {
-  POSITIVE = "positive",
-  NEGATIVE = "negative",
+  POSITIVE = "Positive",
+  NEGATIVE = "Negative",
 }
 export enum ApplicationStatus {
-  PENDING = "pending",
-  APPROVED = "approved",
-  REJECTED = "rejected",
+  PENDING = "Pending",
+  APPROVED = "Approved",
+  REJECTED = "Rejected",
+  COMPLETED = "Completed",
 }
 export enum TaskStatus {
-  PENDING = "pending",
-  COMPLETED = "completed",
+  INPROGRESS = "In Progress",
+  COMPLETED = "Completed",
+  CANCELLED = "Cancelled",
+  ASSIGNED = "Assigned",
 }
 export enum Availabitity {
-  WEEKENDS = "weekends",
-  WEEKDAYS = "weekdays",
-  BOTH = "both",
+  WEEKENDS = "Week ends",
+  WEEKDAYS = "Week days",
+  BOTH = "Both",
 }
 export enum VolunteerDomains {
-  EDUCATION = "education",
-  BLOG = "blog",
-  CULTURE = "culture",
-  REHABILITATION = "rehabilitation",
-  ENVIRONMENT = "environment",
-  AUDIO_RECORDING = "audio_recording",
-  FIELD_WORK = "field_work",
-  SPORTS = "sports",
-  VIEWER = "viewer",
+  EDUCATION = "Education",
+  BLOG = "Blog",
+  CULTURE = "Culture",
+  REHABILITATION = "Rehabilitation",
+  ENVIRONMENT = "Environment",
+  AUDIO_RECORDING = "Audio recording",
+  FIELD_WORK = "Field work",
+  SPORTS = "Sports",
+  VIEWER = "Viewer",
 }

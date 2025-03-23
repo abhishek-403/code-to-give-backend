@@ -1,8 +1,7 @@
-import mongoose from "mongoose";
-import { Schema } from "mongoose";
-import { AvailabilityType } from "../dto/event.dto";
-import { Availabitity } from "../lib/constants";
+import mongoose, { Schema } from "mongoose";
 import { IApplication } from "../dto/application.dto";
+import { AvailabilityType } from "../dto/event.dto";
+import { ApplicationStatus, Availabitity } from "../lib/constants";
 
 const ApplicationSchema: Schema = new Schema(
   {
@@ -12,11 +11,22 @@ const ApplicationSchema: Schema = new Schema(
       required: true,
       index: true,
     },
+    applicantPhone: {
+      type: String,
+      required: true,
+    },
+    applicantEmail: {
+      type: String,
+      required: true,
+    },
+    applicantName: {
+      type: String,
+      required: true,
+    },
     applicantId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     volunteeringDomain: {
       type: mongoose.Schema.Types.ObjectId,
@@ -24,10 +34,11 @@ const ApplicationSchema: Schema = new Schema(
       required: true,
       index: true,
     },
+
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected", "completed", "cancelled"],
-      default: "pending",
+      enum: Object.values(ApplicationStatus),
+      default: ApplicationStatus.PENDING,
       index: true,
     },
     willingStartDate: {

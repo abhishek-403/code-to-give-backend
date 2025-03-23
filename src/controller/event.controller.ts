@@ -1,18 +1,22 @@
 import { Response } from "express";
+import { CreateVolunteeringDomainDto } from "../dto/volunteer-domain.dto";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
-import { User } from "../model/user.schema";
 import { Event } from "../model/event.schema";
+import { User } from "../model/user.schema";
+import { VolunteeringDomain } from "../model/volunteer-domain.schema";
 
 export const createBulkEvent = async (req: any, res: Response) => {
   try {
     const creator = await User.findOne({ uid: req.user.uid });
     if (!creator) {
-      return res.status(401).send(errorResponse(401, "Unauthorized"));
+      res.status(401).send(errorResponse(401, "Unauthorized"));
+      return;
     }
 
     const eventsData = req.body;
     if (!Array.isArray(eventsData) || eventsData.length === 0) {
-      return res.status(400).send(errorResponse(400, "Invalid events data"));
+      res.status(400).send(errorResponse(400, "Invalid events data"));
+      return;
     }
 
     const eventsWithCreator = eventsData.map((event) => ({
@@ -27,6 +31,39 @@ export const createBulkEvent = async (req: any, res: Response) => {
 
     res.send(errorResponse(500, "Internal Error"));
     return;
+  }
+};
+
+export const createVolunteeringDomain = async (req: any, res: Response) => {
+  try {
+    const {
+      name,
+      description,
+      isDefault,
+      createdBy,
+    }: CreateVolunteeringDomainDto = req.body;
+
+    if (!name || !createdBy) {
+      res.send(errorResponse(400, "Name and createdBy are required"));
+      return;
+    }
+
+    const existingDomain = await VolunteeringDomain.findOne({ name });
+    if (existingDomain) {
+      res.send(errorResponse(409, "Domain with this name already exists"));
+      return;
+    }
+
+    const newDomain = await VolunteeringDomain.create({
+      name,
+      description,
+      isDefault,
+      createdBy,
+    });
+    res.send(successResponse(201, { domain: newDomain }));
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(errorResponse(500, "Internal Server Error"));
   }
 };
 export const createEvent = async (req: any, res: Response) => {
@@ -104,7 +141,10 @@ export const getActiveEvents = async (req: any, res: Response) => {
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    const events = await Event.find({}).skip(skip).limit(limit);
+    const events = await Event.find({})
+      .populate("volunteeringDomains")
+      .skip(skip)
+      .limit(limit);
 
     const totalEvents = await Event.countDocuments();
     res.send(
@@ -119,6 +159,8 @@ export const getActiveEvents = async (req: any, res: Response) => {
       })
     );
   } catch (error) {
+    console.log(error);
+
     res.send(errorResponse(500, "Internal Error"));
   }
 };

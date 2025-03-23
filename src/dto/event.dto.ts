@@ -22,6 +22,7 @@ export interface IEvent extends Document {
   isTemplate: boolean;
   templateName?: string;
   templateId?: mongoose.Types.ObjectId;
+  applications?: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }

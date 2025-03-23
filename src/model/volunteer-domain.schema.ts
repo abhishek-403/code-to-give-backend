@@ -3,11 +3,15 @@ import { IVolunteeringDomain } from "../dto/volunteer-domain.dto";
 
 const VolunteeringDomainSchema: Schema = new Schema(
     {
-      name: {
+      id: {
         type: String,
         required: true,
         unique: true,
         index: true,
+      },
+      name: {
+        type: String,
+        required: true,
       },
       description: {
         type: String,

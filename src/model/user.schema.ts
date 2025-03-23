@@ -44,6 +44,18 @@ const UserSchema: Schema = new Schema(
       type: [String],
       default: [],
     },
+    myApplications: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Application",
+      },
+    ],
+    myEvents: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Events",
+      },
+    ],
   },
   {
     timestamps: true,
