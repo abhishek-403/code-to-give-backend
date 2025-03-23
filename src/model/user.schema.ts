@@ -1,48 +1,58 @@
-import mongoose, { Schema, Document } from "mongoose";
-import { UserDto } from "../dto/user.dto";
+import mongoose, { Schema } from "mongoose";
+import { IUser } from "../dto/user.dto";
 import { AuthProviders, UserRole } from "../lib/constants";
 
-export interface IUser extends UserDto, Document {}
-
-const userSchema = new Schema<IUser>(
+const UserSchema: Schema = new Schema(
   {
-    uid: { type: String, required: true, unique: true, index: true },
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true, index: true },
-    contact: {
+    uid: {
       type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    displayName: {
+      type: String,
+      required: true,
+    },
+    profileImage: {
+      type: String,
+      default: null,
     },
     role: {
       type: String,
       enum: Object.values(UserRole),
       default: UserRole.USER,
-      required: true,
     },
-    profileImage: { type: String, default: "" },
     authProvider: {
       type: String,
       enum: Object.values(AuthProviders),
       required: true,
     },
-    applications: [
-      {
-        type: mongoose.Schema.ObjectId,
-        ref: "Application",
-      },
-    ],
     age: {
       type: Number,
-      default: 0,
     },
     location: {
       type: String,
-      default: "",
+    },
+    interests: {
+      type: [String],
+      default: [],
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-userSchema.index({ email: 1, uid: 1 });
+// Indexes for query optimization
+UserSchema.index({ role: 1 });
+UserSchema.index({ location: 1 });
+UserSchema.index({ interests: 1 });
 
-const User = mongoose.model<IUser>("User", userSchema);
-export default User;
+export const User = mongoose.model<IUser>("User", UserSchema);

@@ -1,8 +1,34 @@
 import { Response } from "express";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
-import Event from "../model/event.schema";
-import User from "../model/user.schema";
+import { User } from "../model/user.schema";
+import { Event } from "../model/event.schema";
 
+export const createBulkEvent = async (req: any, res: Response) => {
+  try {
+    const creator = await User.findOne({ uid: req.user.uid });
+    if (!creator) {
+      return res.status(401).send(errorResponse(401, "Unauthorized"));
+    }
+
+    const eventsData = req.body;
+    if (!Array.isArray(eventsData) || eventsData.length === 0) {
+      return res.status(400).send(errorResponse(400, "Invalid events data"));
+    }
+
+    const eventsWithCreator = eventsData.map((event) => ({
+      ...event,
+      createdBy: creator._id,
+    }));
+
+    const events = await Event.insertMany(eventsWithCreator);
+    res.send(successResponse(200, "Events added"));
+  } catch (error) {
+    console.log(error);
+
+    res.send(errorResponse(500, "Internal Error"));
+    return;
+  }
+};
 export const createEvent = async (req: any, res: Response) => {
   try {
     const creator = await User.findOne({ uid: req.user.uid });

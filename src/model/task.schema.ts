@@ -1,38 +1,65 @@
 import mongoose, { Schema } from "mongoose";
-import { CreateTaskDto } from "../dto/tasks.dto";
+import { ITask } from "../dto/tasks.dto";
 import { TaskStatus } from "../lib/constants";
 
-export interface ITask extends CreateTaskDto, Document {}
-
-const taskSchema = new Schema<ITask>(
+const TaskSchema: Schema = new Schema(
   {
     name: {
       type: String,
       required: true,
+      index: true,
     },
     description: {
       type: String,
+    },
+    eventId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Event",
       required: true,
+      index: true,
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
     },
     status: {
       type: String,
       enum: Object.values(TaskStatus),
-      required: true,
+      default: "assigned",
+      index: true,
     },
-    eventId: {
-      type: Schema.Types.ObjectId,
-      ref: "Event",
-      required: true,
+    startDate: {
+      type: Date,
     },
-    applicantId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    }
+    endDate: {
+      type: Date,
+    },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high"],
+      default: "medium",
+    },
+    completedAt: {
+      type: Date,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-const Task = mongoose.model("Task", taskSchema);
+// Compound indexes for analytics
+TaskSchema.index({ eventId: 1, status: 1 });
+TaskSchema.index({ assignedTo: 1, status: 1 });
+TaskSchema.index({ assignedBy: 1, status: 1 });
+TaskSchema.index({ priority: 1, status: 1 });
 
-export default Task;
+export const Task = mongoose.model<ITask>("Task", TaskSchema);

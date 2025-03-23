@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
-import Application from "../model/application.schema";
-import User from "../model/user.schema";
+import { User } from "../model/user.schema";
+import { Application } from "../model/application.schema";
 
 export const createApplication = async (req: any, res: Response) => {
   try {
@@ -18,7 +18,7 @@ export const createApplication = async (req: any, res: Response) => {
     return;
   } catch (error) {
     console.log(error);
-    
+
     res.send(errorResponse(500, "Error creating application"));
     return;
   }
@@ -48,6 +48,18 @@ export const getApplication = async (req: any, res: Response) => {
   try {
     const id = req.params.id;
     const application = await Application.findOne({ _id: id });
+    res.send(successResponse(200, application));
+    return;
+  } catch (error) {
+    res.send(errorResponse(500, "Error fetching applications"));
+    return;
+  }
+};
+export const getMyApplications = async (req: any, res: Response) => {
+  try {
+    const id = req.params.id;
+    const application = await Application.findOne({ applicantId: id });
+    
     res.send(successResponse(200, application));
     return;
   } catch (error) {

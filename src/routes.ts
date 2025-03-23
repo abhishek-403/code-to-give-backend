@@ -1,8 +1,11 @@
 import express from "express";
-import requireUserMiddleware from "./middleware/auth.middleware";
-import { getUserById, googleLogin } from "./controller/user.controller";
-import { authorizeRole } from "./middleware/role.middleware";
-import { UserRole } from "./lib/constants";
+import {
+  createApplication,
+  deleteApplication,
+  getApplication,
+  getMyApplications,
+  updateApplication,
+} from "./controller/application.controller";
 import {
   createEvent,
   deleteEvent,
@@ -11,16 +14,19 @@ import {
   getEventById,
 } from "./controller/event.controller";
 import {
-  createApplication,
-  deleteApplication,
-  getApplication,
-  updateApplication,
-} from "./controller/application.controller";
+  createUser,
+  getUserById,
+  googleLogin,
+} from "./controller/user.controller";
+import { UserRole } from "./lib/constants";
+import requireUserMiddleware from "./middleware/auth.middleware";
+import { authorizeRole } from "./middleware/role.middleware";
 const router = express.Router();
 
 // User Routes
 router.post("/user/google-login", requireUserMiddleware, googleLogin);
 router.get("/user/get-profile", requireUserMiddleware, getUserById);
+router.post("/user/create-user", requireUserMiddleware, createUser);
 
 // Event routes
 router.post(
@@ -49,6 +55,7 @@ router.delete(
 router.post("/application", requireUserMiddleware, createApplication);
 router.put("/applicationnt/:id", requireUserMiddleware, updateApplication);
 router.get("/event/:id", requireUserMiddleware, getApplication);
+router.get("/events", requireUserMiddleware, getMyApplications);
 router.delete("/event/:id", requireUserMiddleware, deleteApplication);
 
 export default router;

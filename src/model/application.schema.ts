@@ -1,46 +1,80 @@
-import mongoose, { Schema } from "mongoose";
-import { CreateApplicationDto } from "../dto/application.dto";
-import { ApplicationStatus, Availabitity } from "../lib/constants";
+import mongoose from "mongoose";
+import { Schema } from "mongoose";
+import { AvailabilityType } from "../dto/event.dto";
+import { Availabitity } from "../lib/constants";
+import { IApplication } from "../dto/application.dto";
 
-export interface IApplication extends CreateApplicationDto, Document {}
-
-const applicationSchema = new Schema<IApplication>(
+const ApplicationSchema: Schema = new Schema(
   {
-    status: {
-      type: String,
-      default: ApplicationStatus.PENDING,
-      enum: Object.values(ApplicationStatus),
-      required: true,
-    },
-
-    applicantId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
     eventId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Event",
       required: true,
+      index: true,
+    },
+    applicantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
+    volunteeringDomain: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "VolunteeringDomain",
+      required: true,
+      index: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected", "completed", "cancelled"],
+      default: "pending",
+      index: true,
+    },
+    willingStartDate: {
+      type: Date,
+      required: true,
+    },
+    willingEndDate: {
+      type: Date,
+      required: true,
     },
     availability: {
+      type: Schema.Types.Mixed,
+      required: true,
+      validate: {
+        validator: function (v: AvailabilityType) {
+          if (typeof v === "string") {
+            return Object.values(Availabitity).includes(v);
+          }
+          return Array.isArray(v);
+        },
+        message:
+          'Availability must be "weekend", "weekday", "both", or an array of days',
+      },
+    },
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    reviewedAt: {
+      type: Date,
+    },
+    notes: {
       type: String,
-      enum: Object.values(Availabitity),
-      default: Availabitity.WEEKENDS,
-      required: true,
-    },
-    startDate: {
-      type: Date,
-      required: true,
-    },
-    endDate: {
-      type: Date,
-      required: true,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-const Application = mongoose.model("Application", applicationSchema);
+// Compound indexes for analytics
+ApplicationSchema.index({ eventId: 1, status: 1 });
+ApplicationSchema.index({ applicantId: 1, status: 1 });
+ApplicationSchema.index({ volunteeringDomain: 1, status: 1 });
+ApplicationSchema.index({ willingStartDate: 1, willingEndDate: 1 });
 
-export default Application;
+export const Application = mongoose.model<IApplication>(
+  "Application",
+  ApplicationSchema
+);

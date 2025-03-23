@@ -1,38 +1,49 @@
-import mongoose, { Schema } from "mongoose";
-import { CreateFeedBackDto } from "../dto/feedback.dto";
-import { FeedBackSentiment } from "../lib/constants";
+// Simple Feedback Schema
+import mongoose, { Schema, Document } from "mongoose";
+import { IFeedback } from "../dto/feedback.dto";
 
-export interface IFeedback extends CreateFeedBackDto, Document {}
-
-const feedbackSchema = new Schema<IFeedback>(
+const FeedbackSchema: Schema = new Schema(
   {
-    applicantId: {
-      type: Schema.Types.ObjectId,
+    eventId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Event",
+      required: true,
+      index: true,
+    },
+    respondentId: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
+      index: true,
     },
-    eventId: {
-      type: Schema.Types.ObjectId,
-      ref: "Event", 
-      required: true,
-    },
-    sentement: {
-      type: String,
-      enum: Object.values(FeedBackSentiment),
-      required: false,
-    },
-    description: {
+    formId: {
       type: String,
       required: true,
+      index: true,
     },
-    date: {
+    responses: {
+      type: Schema.Types.Mixed, // Flexible schema for any Google Form data structure
+      required: true,
+    },
+    submittedAt: {
       type: Date,
-      required: true,
-    }
+      default: Date.now,
+      index: true,
+    },
+    overallRating: {
+      type: Number,
+      min: 1,
+      max: 5,
+      index: true,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+  }
 );
 
-const Feedback = mongoose.model("Feedback", feedbackSchema);
+// Compound indexes for analytics
+FeedbackSchema.index({ eventId: 1, submittedAt: 1 });
+FeedbackSchema.index({ eventId: 1, overallRating: 1 });
 
-export default Feedback;
+export const Feedback = mongoose.model<IFeedback>("Feedback", FeedbackSchema);

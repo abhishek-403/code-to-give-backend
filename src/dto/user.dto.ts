@@ -1,17 +1,36 @@
-import { Types } from "mongoose";
-import { AuthProviders, UserRole } from "../lib/constants";
-
-export interface UserDto {
+import { Document } from 'mongoose';
+import { UserRole } from '../lib/constants';
+export interface IUser extends Document {
   uid: string;
-  name: string;
   email: string;
-  role?: UserRole;
+  displayName: string;
   profileImage?: string;
-  contact?: string;
-  authProvider: AuthProviders;
-  age?: Number;
-  location?:string;
-  applications?: Types.ObjectId[];
-  createdAt?: Date;
-  updatedAt?: Date;
+  role: UserRole;
+  authProvider: 'email' | 'google';
+  age?: number;
+  location?: string;
+  interests?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CreateUserDto {
+  uid: string;
+  email: string;
+  displayName: string;
+  profileImage?: string;
+  role?: UserRole;
+  authProvider: 'email' | 'google';
+  age?: number;
+  location?: string;
+  interests?: string[];
+}
+
+export interface UpdateUserDto {
+  displayName?: string;
+  profileImage?: string;
+  role?: UserRole;
+  age?: number;
+  location?: string;
+  interests?: string[];
 }

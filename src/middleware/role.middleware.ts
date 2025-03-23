@@ -1,7 +1,7 @@
 import { Response, NextFunction } from "express";
 import { errorResponse } from "../lib/responseWrappper";
 import { UserRole } from "../lib/constants";
-import User from "../model/user.schema";
+import { User } from "../model/user.schema";
 
 export const authorizeRole =
   (requiredRole: UserRole) =>
