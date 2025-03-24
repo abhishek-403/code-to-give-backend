@@ -5,7 +5,7 @@ export interface IVolunteeringDomain extends Document {
   name: string;
   description?: string;
   isDefault: boolean;
-  createdBy: mongoose.Types.ObjectId;
+  createdBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

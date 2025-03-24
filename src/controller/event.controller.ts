@@ -1,7 +1,9 @@
 import { Response } from "express";
+import mongoose from "mongoose";
 import { CreateVolunteeringDomainDto } from "../dto/volunteer-domain.dto";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
 import { Event } from "../model/event.schema";
+import { TemplateFormModel } from "../model/template.schema";
 import { User } from "../model/user.schema";
 import { VolunteeringDomain } from "../model/volunteer-domain.schema";
 
@@ -36,17 +38,18 @@ export const createBulkEvent = async (req: any, res: Response) => {
 
 export const createVolunteeringDomain = async (req: any, res: Response) => {
   try {
-    const {
-      name,
-      description,
-      isDefault,
-      createdBy,
-    }: CreateVolunteeringDomainDto = req.body;
-
-    if (!name || !createdBy) {
-      res.send(errorResponse(400, "Name and createdBy are required"));
+    const { name }: CreateVolunteeringDomainDto = req.body;
+    const user = await User.findOne({ uid: req.user.uid });
+    if (!name || !user) {
+      res.send(errorResponse(400, "Name and user are required"));
       return;
     }
+    const isDuplicate = await VolunteeringDomain.findOne({ name });
+    if (isDuplicate) {
+      res.send(errorResponse(400, "Dmain already exists"));
+      return;
+    }
+    const createdBy = user._id;
 
     const existingDomain = await VolunteeringDomain.findOne({ name });
     if (existingDomain) {
@@ -56,16 +59,39 @@ export const createVolunteeringDomain = async (req: any, res: Response) => {
 
     const newDomain = await VolunteeringDomain.create({
       name,
-      description,
-      isDefault,
       createdBy,
     });
-    res.send(successResponse(201, { domain: newDomain }));
+    res.send(successResponse(201, "New domain created"));
   } catch (error) {
     console.error(error);
     res.status(500).send(errorResponse(500, "Internal Server Error"));
   }
 };
+// export const createEvent = async (req: any, res: Response) => {
+//   try {
+//     const creator = await User.findOne({ uid: req.user.uid });
+//     if (!creator) {
+//       res.send(errorResponse(401, "Unauthorized"));
+//       return;
+//     }
+//     const eventsData = req.body;
+//     const eventsWithCreator = {
+//       ...eventsData,
+//       createdBy: creator._id,
+//     };
+//     const event = await Event.create(eventsWithCreator);
+
+//     res.send(successResponse(200, { eventId: event._id, msg: "Event Added!" }));
+//   } catch (error) {
+//     console.log(error);
+
+//     res.send(errorResponse(500, "Internal Error"));
+//     return;
+//   }
+// };
+
+// Explicitly type the Request if possible (optional, but recommended)
+
 export const createEvent = async (req: any, res: Response) => {
   try {
     const creator = await User.findOne({ uid: req.user.uid });
@@ -73,19 +99,115 @@ export const createEvent = async (req: any, res: Response) => {
       res.send(errorResponse(401, "Unauthorized"));
       return;
     }
-    const eventsData = req.body;
-    const eventsWithCreator = {
-      ...eventsData,
+
+    let {
+      name,
+      description,
+      location,
+      startDate,
+      endDate,
+      availability,
+      capacity,
+      volunteeringDomains,
+      formFields,
+      saveAsTemplate,
+      templateName,
+    } = req.body;
+
+    if (saveAsTemplate && !templateName.trim()) {
+      res.send(errorResponse(400, "Template name required"));
+      return;
+    }
+
+    if (
+      !name ||
+      !description ||
+      !location ||
+      !startDate ||
+      !endDate ||
+      !availability
+    ) {
+      res.send(errorResponse(400, "Missing required fields"));
+      return;
+    }
+
+    if (
+      !Array.isArray(volunteeringDomains) ||
+      volunteeringDomains.length === 0
+    ) {
+      res.send(
+        errorResponse(400, "At least one volunteering domain is required")
+      );
+      return;
+    }
+
+    // Convert domain names to ObjectIds and validate.
+    const volunteeringDomainIds: mongoose.Types.ObjectId[] = volunteeringDomains
+      .map((id: string) => {
+        if (mongoose.isValidObjectId(id)) {
+          return new mongoose.Types.ObjectId(id);
+        } else {
+          console.warn(`Invalid ObjectId encountered: ${id}`);
+          return null;
+        }
+      })
+      .filter(Boolean) as mongoose.Types.ObjectId[];
+
+    if (volunteeringDomainIds.length !== volunteeringDomains.length) {
+      res.send(errorResponse(400, "Invalid volunteering domain(s) provided."));
+      return;
+    }
+
+    const existingCount = await VolunteeringDomain.countDocuments({
+      _id: { $in: volunteeringDomainIds },
+    });
+
+    if (existingCount !== volunteeringDomainIds.length) {
+      res.send(errorResponse(400, "Invalid volunteering domain(s) provided."));
+      return;
+    }
+
+    if (!Array.isArray(availability) || availability.length === 0) {
+      res.send(errorResponse(400, "Availability options are required"));
+      return;
+    }
+
+    let templateForm;
+    if (
+      Array.isArray(formFields) &&
+      formFields.length > 0 &&
+      templateName.trim()
+    ) {
+      templateForm = await TemplateFormModel.create({
+        name: templateName,
+        fields: formFields,
+        isSaved: saveAsTemplate,
+      });
+    }
+
+    const newEvent: any = await Event.create({
+      name,
+      description,
+      location,
+      startDate,
+      endDate,
       createdBy: creator._id,
-    };
-    const event = await Event.create(eventsWithCreator);
+      volunteeringDomains: volunteeringDomainIds,
+      availability,
+      capacity,
+      isTemplate: saveAsTemplate,
+    });
 
-    res.send(successResponse(200, { eventId: event._id, msg: "Event Added!" }));
+    if (newEvent && templateForm) {
+      newEvent.template = templateForm._id;
+    }
+
+    await newEvent.save();
+
+    res.send(successResponse(201, newEvent._id));
   } catch (error) {
-    console.log(error);
-
-    res.send(errorResponse(500, "Internal Error"));
-    return;
+    console.error(error);
+    res.send(errorResponse(500, "Internal Server Error"));
   }
 };
 export const editEvent = async (req: any, res: Response) => {
@@ -119,6 +241,27 @@ export const deleteEvent = async (req: any, res: Response) => {
     res.send(errorResponse(500, "Error deleting event"));
   }
 };
+export const getVolunteeringDomain = async (req: any, res: Response) => {
+  try {
+    const vol = await VolunteeringDomain.find();
+    const formatted = vol.map((v) => ({
+      name: v.name,
+      _id: v._id,
+    }));
+    res.send(successResponse(200, formatted));
+  } catch (error) {
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};
+export const getAllTemplates = async (req: any, res: Response) => {
+  try {
+    const template = await TemplateFormModel.find({ isSaved: true });
+
+    res.send(successResponse(200, template));
+  } catch (error) {
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};
 export const getEventById = async (req: any, res: Response) => {
   try {
     const id = req.params.id;
@@ -132,21 +275,115 @@ export const getEventById = async (req: any, res: Response) => {
     res.send(errorResponse(500, "Internal Error"));
   }
 };
+// export const getActiveEvents = async (req: any, res: Response) => {
+//   try {
+//     const { page = 1, limit = 5 } = req.query;
+
+//     // Convert page and limit to numbers
+//     const pageNum = parseInt(page as string);
+//     const limitNum = parseInt(limit as string);
+//     const skip = (pageNum - 1) * limitNum;
+
+//     const events = await Event.find({})
+//       .populate("volunteeringDomains")
+//       .skip(skip)
+//       .limit(limit);
+
+//     const totalEvents = await Event.countDocuments();
+//     res.send(
+//       successResponse(200, {
+//         events,
+//         pagination: {
+//           total: totalEvents,
+//           page: pageNum,
+//           limit: limitNum,
+//           hasMore: skip + events.length < totalEvents,
+//         },
+//       })
+//     );
+//   } catch (error) {
+//     console.log(error);
+
+//     res.send(errorResponse(500, "Internal Error"));
+//   }
+// };
+
 export const getActiveEvents = async (req: any, res: Response) => {
   try {
-    const { page = 1, limit = 5 } = req.query;
+    const {
+      page = 1,
+      limit = 5,
+      activeTab,
+      city,
+      domain,
+      availability,
+      startDate,
+      endDate,
+      searchQuery,
+    } = req.query;
 
     // Convert page and limit to numbers
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
     const skip = (pageNum - 1) * limitNum;
 
-    const events = await Event.find({})
+    // Build query filters
+    let query: any = {};
+
+    // Apply activeTab filter (assuming it determines past/upcoming events)
+    if (activeTab && activeTab !== "all") {
+      const currentDate = new Date();
+      if (activeTab === "upcoming") {
+        query.startDate = { $gte: currentDate };
+      } else if (activeTab === "past") {
+        query.endDate = { $lt: currentDate };
+      }
+    }
+
+    // Apply city filter
+    if (city) {
+      query.location = city;
+    }
+
+    // Apply domain filter (assuming it's stored as an ObjectId reference)
+    if (domain) {
+      query.volunteeringDomains = { $in: domain };
+    }
+
+    // Apply availability filter
+    if (availability) {
+      query.availability = { $in: availability };
+    }
+
+    // Apply date range filters
+    if (startDate) {
+      query.startDate = {
+        ...query.startDate,
+        $gte: new Date(startDate as string),
+      };
+    }
+
+    if (endDate) {
+      query.endDate = { ...query.endDate, $lte: new Date(endDate as string) };
+    }
+    if (searchQuery) {
+      const searchRegex = new RegExp(searchQuery.split(/\s+/).join(".*"), "i"); // Matches words with spaces
+
+      query.$or = [
+        { name: searchRegex }, // Matches "Community Health Camp" when searching "camp"
+        { description: searchRegex },
+        { location: searchRegex },
+      ];
+    }
+    // Execute query with filters
+    const events = await Event.find(query)
       .populate("volunteeringDomains")
       .skip(skip)
-      .limit(limit);
+      .limit(limitNum);
 
-    const totalEvents = await Event.countDocuments();
+    // Count total filtered events
+    const totalEvents = await Event.countDocuments(query);
+
     res.send(
       successResponse(200, {
         events,
@@ -160,7 +397,6 @@ export const getActiveEvents = async (req: any, res: Response) => {
     );
   } catch (error) {
     console.log(error);
-
     res.send(errorResponse(500, "Internal Error"));
   }
 };

@@ -1,102 +1,81 @@
+// event.model.ts
 import mongoose, { Schema } from "mongoose";
-import { AvailabilityType, IEvent } from "../dto/event.dto";
+import { IEvent } from "../dto/event.dto";
 import { Availabitity } from "../lib/constants";
-// const EventVolunteeringDomainSchema: Schema = new Schema({
-//   domain: {
-//     type: mongoose.Schema.Types.ObjectId,
-//     ref: "VolunteeringDomain",
-//     required: true,
-//   },
-//   customName: {
-//     type: String,
-//   },
-//   customDescription: {
-//     type: String,
-//   },
-// });
 
 const EventSchema: Schema = new Schema(
   {
     name: {
       type: String,
       required: true,
-      index: true,
+      trim: true,
     },
     description: {
       type: String,
+      required: true,
     },
     location: {
       type: String,
       required: true,
-      index: true,
     },
     startDate: {
       type: Date,
       required: true,
-      index: true,
     },
     endDate: {
       type: Date,
       required: true,
-      index: true,
+      validate: {
+        validator: function (this: IEvent) {
+          return this.endDate >= this.startDate;
+        },
+        message: "End date must be after or equal to start date",
+      },
     },
     createdBy: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     volunteeringDomains: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "VolunteeringDomain",
         required: true,
       },
     ],
     applications: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: "Application",
+        default: [],
       },
     ],
-    availability: [
-      {
-        type: Schema.Types.Mixed,
-        required: true,
-        validate: {
-          validator: function (v: AvailabilityType) {
-            if (typeof v === "string") {
-              return Object.values(Availabitity).includes(v);
-            }
-            return Array.isArray(v);
-          },
-          message:
-            'Availability must be "Week ends", "Week days", "Both", or an array of days',
-        },
-        index: true,
-      },
-    ],
-    isTemplate: {
-      type: Boolean,
-      default: false,
-      index: true,
+    availability: {
+      type: [String],
+      enum: Object.values(Availabitity),
+      required: true,
     },
-    templateName: {
-      type: String,
+    capacity: {
+      type: Number,
+      min: 1,
     },
-    templateId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Event",
-      index: true,
+    template: {
+      type: Schema.Types.ObjectId,
+      ref: "TemplateForm",
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Compound indexes for querying events by date range
+// Add index for faster queries
 EventSchema.index({ startDate: 1, endDate: 1 });
-EventSchema.index({ isTemplate: 1, createdBy: 1 });
+EventSchema.index({ isTemplate: 1 });
+
+// Virtual for checking if event is at capacity
+EventSchema.virtual("isAtCapacity").get(function (this: IEvent) {
+  if (!this.capacity) return false;
+  return this.applications && this.applications.length >= this.capacity;
+});
 
 export const Event = mongoose.model<IEvent>("Event", EventSchema);

@@ -4,7 +4,6 @@ import {
   deleteApplication,
   getApplication,
   getMyActiveApplications,
-  getMyApplications,
   updateApplication,
 } from "./controller/application.controller";
 import {
@@ -14,7 +13,9 @@ import {
   deleteEvent,
   editEvent,
   getActiveEvents,
+  getAllTemplates,
   getEventById,
+  getVolunteeringDomain,
 } from "./controller/event.controller";
 import {
   createUser,
@@ -50,6 +51,7 @@ router.post(
   authorizeRole(UserRole.WEBMASTER),
   createVolunteeringDomain
 );
+router.get("/event-volunteering-domain", getVolunteeringDomain);
 router.put(
   "/event/:id",
   requireUserMiddleware,
@@ -57,6 +59,7 @@ router.put(
   editEvent
 );
 router.get("/event/:id", getEventById);
+router.get("/event-templates", getAllTemplates);
 router.get("/event", getActiveEvents);
 router.delete(
   "/event/:id",

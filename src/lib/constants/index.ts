@@ -41,3 +41,14 @@ export enum VolunteerDomains {
   SPORTS = "Sports",
   VIEWER = "Viewer",
 }
+export enum FormFieldType {
+  TEXT = "Text",
+  EMAIL = "Email",
+  PHONE = "Phone",
+  DATE = "Date",
+  TEXTAREA = "Textarea",
+  SELECT = "Select",
+  CHECKBOX = "Checkbox",
+  RADIO = "Radio",
+  FILE = "File",
+}
