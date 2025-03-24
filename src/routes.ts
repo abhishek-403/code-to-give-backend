@@ -5,14 +5,17 @@ import {
   getApplication,
   getMyActiveApplications,
   updateApplication,
+  updateApplicationStatus,
 } from "./controller/application.controller";
 import {
+  addTaskToEvent,
   createBulkEvent,
   createEvent,
   createVolunteeringDomain,
   deleteEvent,
   editEvent,
   getActiveEvents,
+  getActiveEventsAdmin,
   getAllTemplates,
   getEventById,
   getVolunteeringDomain,
@@ -61,6 +64,18 @@ router.put(
 router.get("/event/:id", getEventById);
 router.get("/event-templates", getAllTemplates);
 router.get("/event", getActiveEvents);
+router.get(
+  "/event-admin",
+  requireUserMiddleware,
+  authorizeRole(UserRole.WEBMASTER),
+  getActiveEventsAdmin
+);
+router.post(
+  "/event/:eventId/task",
+  requireUserMiddleware,
+  authorizeRole(UserRole.WEBMASTER),
+  addTaskToEvent
+);
 router.delete(
   "/event/:id",
   requireUserMiddleware,
@@ -71,8 +86,13 @@ router.delete(
 // Application Routes
 
 router.post("/application", requireUserMiddleware, createApplication);
+router.post(
+  "/application/:id/status",
+  requireUserMiddleware,
+  updateApplicationStatus
+);
 router.get("/application", requireUserMiddleware, getMyActiveApplications);
-router.put("/applicationnt/:id", requireUserMiddleware, updateApplication);
+router.put("/application/:id", requireUserMiddleware, updateApplication);
 router.get("/event/:id", requireUserMiddleware, getApplication);
 router.delete("/event/:id", requireUserMiddleware, deleteApplication);
 

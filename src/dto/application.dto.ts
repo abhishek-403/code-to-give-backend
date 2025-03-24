@@ -16,6 +16,7 @@ export interface IApplication extends Document {
   availability: AvailabilityType;
   reviewedBy?: mongoose.Types.ObjectId;
   reviewedAt?: Date;
+  templateResponses?: Record<string, string>;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;

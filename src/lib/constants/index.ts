@@ -52,3 +52,9 @@ export enum FormFieldType {
   RADIO = "Radio",
   FILE = "File",
 }
+export enum EventStatus {
+  ACTIVE = "Active",
+  COMPLETED = "Completed",
+  CANCELLED = "Cancelled",
+  POSTPONED = "Postponed",
+}

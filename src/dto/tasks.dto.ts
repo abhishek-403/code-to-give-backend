@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from "mongoose";
+import { TaskStatus } from "../lib/constants";
 
-export type TaskStatus = "assigned" | "in_progress" | "completed" | "cancelled";
 
 export interface ITask extends Document {
   _id: mongoose.Types.ObjectId;

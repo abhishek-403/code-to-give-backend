@@ -33,7 +33,8 @@ const TaskSchema: Schema = new Schema(
     status: {
       type: String,
       enum: Object.values(TaskStatus),
-      default: "assigned",
+      default: TaskStatus.ASSIGNED,
+      required: true,
       index: true,
     },
     startDate: {

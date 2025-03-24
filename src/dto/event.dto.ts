@@ -1,5 +1,5 @@
 import mongoose, { Document } from "mongoose";
-import { Availabitity } from "../lib/constants";
+import { Availabitity, EventStatus } from "../lib/constants";
 
 export type AvailabilityType = Availabitity | string[];
 
@@ -16,11 +16,14 @@ export interface IEvent extends Document {
   location: string;
   startDate: Date;
   endDate: Date;
+  status: EventStatus;
   createdBy: mongoose.Types.ObjectId;
   volunteeringDomains: mongoose.Types.ObjectId[];
   availability: AvailabilityType;
   template?: mongoose.Types.ObjectId;
   applications?: mongoose.Types.ObjectId[];
+  volunteers?: mongoose.Types.ObjectId[];
+  tasks?: mongoose.Types.ObjectId[];
   capacity?: number;
   createdAt: Date;
   updatedAt: Date;

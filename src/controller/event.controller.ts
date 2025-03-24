@@ -1,8 +1,10 @@
 import { Response } from "express";
 import mongoose from "mongoose";
 import { CreateVolunteeringDomainDto } from "../dto/volunteer-domain.dto";
+import { ApplicationStatus } from "../lib/constants";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
 import { Event } from "../model/event.schema";
+import { Task } from "../model/task.schema";
 import { TemplateFormModel } from "../model/template.schema";
 import { User } from "../model/user.schema";
 import { VolunteeringDomain } from "../model/volunteer-domain.schema";
@@ -275,38 +277,6 @@ export const getEventById = async (req: any, res: Response) => {
     res.send(errorResponse(500, "Internal Error"));
   }
 };
-// export const getActiveEvents = async (req: any, res: Response) => {
-//   try {
-//     const { page = 1, limit = 5 } = req.query;
-
-//     // Convert page and limit to numbers
-//     const pageNum = parseInt(page as string);
-//     const limitNum = parseInt(limit as string);
-//     const skip = (pageNum - 1) * limitNum;
-
-//     const events = await Event.find({})
-//       .populate("volunteeringDomains")
-//       .skip(skip)
-//       .limit(limit);
-
-//     const totalEvents = await Event.countDocuments();
-//     res.send(
-//       successResponse(200, {
-//         events,
-//         pagination: {
-//           total: totalEvents,
-//           page: pageNum,
-//           limit: limitNum,
-//           hasMore: skip + events.length < totalEvents,
-//         },
-//       })
-//     );
-//   } catch (error) {
-//     console.log(error);
-
-//     res.send(errorResponse(500, "Internal Error"));
-//   }
-// };
 
 export const getActiveEvents = async (req: any, res: Response) => {
   try {
@@ -376,10 +346,172 @@ export const getActiveEvents = async (req: any, res: Response) => {
       ];
     }
     // Execute query with filters
+
     const events = await Event.find(query)
       .populate("volunteeringDomains")
+      .populate("template")
+      .populate({
+        path: "applications",
+        // match: { status: ApplicationStatus.PENDING },
+        populate: {
+          path: "volunteeringDomain",
+          model: "VolunteeringDomain",
+        },
+      })
       .skip(skip)
-      .limit(limitNum);
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
+
+    // Count total filtered events
+    const totalEvents = await Event.countDocuments(query);
+
+    res.send(
+      successResponse(200, {
+        events,
+        pagination: {
+          total: totalEvents,
+          page: pageNum,
+          limit: limitNum,
+          hasMore: skip + events.length < totalEvents,
+        },
+      })
+    );
+  } catch (error) {
+    console.log(error);
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};
+export const addTaskToEvent = async (req: any, res: Response) => {
+  try {
+    const { eventId } = req.params;
+    const {
+      name,
+      description,
+      assignedTo,
+      assignedBy,
+      startDate,
+      endDate,
+      priority,
+    } = req.body;
+
+    // Check if event
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      res.send(errorResponse(404, "Event not found"));
+      return;
+    }
+
+    // Create new task
+    const task = await Task.create({
+      name,
+      description,
+      eventId,
+      assignedTo,
+      assignedBy,
+      startDate,
+      endDate,
+      priority,
+    });
+
+    event.tasks = event.tasks || [];
+    event.tasks.push(task._id);
+    event.tasks.push(task._id);
+    await event.save();
+
+    res.send(successResponse(201, "Task added to event successfully"));
+    return;
+  } catch (error) {
+    console.log(error);
+    
+    res.send(errorResponse(500, "Error adding task to event"));
+    return;
+  }
+};
+export const getActiveEventsAdmin = async (req: any, res: Response) => {
+  try {
+    const {
+      page = 1,
+      limit = 5,
+      activeTab,
+      city,
+      domain,
+      availability,
+      startDate,
+      endDate,
+      searchQuery,
+    } = req.query;
+
+    // Convert page and limit to numbers
+    const pageNum = parseInt(page as string);
+    const limitNum = parseInt(limit as string);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query filters
+    let query: any = {};
+
+    // Apply activeTab filter (assuming it determines past/upcoming events)
+    if (activeTab && activeTab !== "all") {
+      const currentDate = new Date();
+      if (activeTab === "upcoming") {
+        query.startDate = { $gte: currentDate };
+      } else if (activeTab === "past") {
+        query.endDate = { $lt: currentDate };
+      }
+    }
+
+    // Apply city filter
+    if (city) {
+      query.location = city;
+    }
+
+    // Apply domain filter (assuming it's stored as an ObjectId reference)
+    if (domain) {
+      query.volunteeringDomains = { $in: domain };
+    }
+
+    // Apply availability filter
+    if (availability) {
+      query.availability = { $in: availability };
+    }
+
+    // Apply date range filters
+    if (startDate) {
+      query.startDate = {
+        ...query.startDate,
+        $gte: new Date(startDate as string),
+      };
+    }
+
+    if (endDate) {
+      query.endDate = { ...query.endDate, $lte: new Date(endDate as string) };
+    }
+    if (searchQuery) {
+      const searchRegex = new RegExp(searchQuery.split(/\s+/).join(".*"), "i"); // Matches words with spaces
+
+      query.$or = [
+        { name: searchRegex }, // Matches "Community Health Camp" when searching "camp"
+        { description: searchRegex },
+        { location: searchRegex },
+      ];
+    }
+    // Execute query with filters
+
+    const events = await Event.find(query)
+      .populate("volunteeringDomains")
+      .populate("template")
+      .populate("volunteers").populate("tasks")
+      .populate({
+        path: "applications",
+        match: { status: ApplicationStatus.PENDING },
+        populate: {
+          path: "volunteeringDomain",
+          model: "VolunteeringDomain",
+        },
+      })
+      .skip(skip)
+      .limit(limitNum)
+      .sort({ createdAt: -1 });
 
     // Count total filtered events
     const totalEvents = await Event.countDocuments(query);

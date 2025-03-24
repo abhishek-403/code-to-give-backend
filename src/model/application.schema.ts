@@ -63,6 +63,11 @@ const ApplicationSchema: Schema = new Schema(
           'Availability must be "weekend", "weekday", "both", or an array of days',
       },
     },
+    templateResponses: {
+      type: Map,
+      of: String,
+      default: {},
+    },
     reviewedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

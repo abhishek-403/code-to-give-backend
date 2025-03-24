@@ -1,7 +1,7 @@
 // event.model.ts
 import mongoose, { Schema } from "mongoose";
 import { IEvent } from "../dto/event.dto";
-import { Availabitity } from "../lib/constants";
+import { Availabitity, EventStatus } from "../lib/constants";
 
 const EventSchema: Schema = new Schema(
   {
@@ -13,6 +13,12 @@ const EventSchema: Schema = new Schema(
     description: {
       type: String,
       required: true,
+    },
+    status: {
+      type: String,
+      enum: Object.values(EventStatus),
+      required: true,
+      default: EventStatus.ACTIVE,
     },
     location: {
       type: String,
@@ -64,6 +70,20 @@ const EventSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "TemplateForm",
     },
+    volunteers:[
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: [],
+      },
+    ],
+    tasks:[
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Task",
+        default: [],
+      },
+    ]
   },
   { timestamps: true }
 );

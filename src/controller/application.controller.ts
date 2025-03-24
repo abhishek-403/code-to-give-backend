@@ -1,4 +1,5 @@
 import { Response } from "express";
+import { ApplicationStatus } from "../lib/constants";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
 import { Application } from "../model/application.schema";
 import { Event } from "../model/event.schema";
@@ -50,6 +51,52 @@ export const updateApplication = async (req: any, res: Response) => {
       res.send(errorResponse(404, "Application not found"));
       return;
     }
+    res.send(successResponse(200, "Application updated successfully"));
+    return;
+  } catch (error) {
+    res.send(errorResponse(500, "Error updating application"));
+    return;
+  }
+};
+export const updateApplicationStatus = async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!id) {
+      res.send(errorResponse(400, "Application ID is required"));
+      return;
+    }
+
+    if (!status) {
+      res.send(errorResponse(400, "Status field is required"));
+      return;
+    }
+
+    const application = await Application.findById(id);
+    if (!application) {
+      res.send(errorResponse(404, "Application not found"));
+      return;
+    }
+    application.status = status;
+    await application.save();
+    if (status === ApplicationStatus.APPROVED) {
+      const event = await Event.findById(application.eventId);
+      if (!event) {
+        res.send(errorResponse(404, "Event not found"));
+        return;
+      }
+
+      if (!event.volunteers) {
+        event.volunteers = [];
+      }
+
+      if (!event.volunteers.includes(application.applicantId)) {
+        event.volunteers.push(application.applicantId);
+        await event.save();
+      }
+    }
+
     res.send(successResponse(200, "Application updated successfully"));
     return;
   } catch (error) {
