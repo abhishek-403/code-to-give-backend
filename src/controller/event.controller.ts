@@ -294,6 +294,11 @@ export const getActiveEvents = async (req: any, res: Response) => {
       endDate,
       searchQuery,
     } = req.query;
+    const user = await User.findOne({ uid: req.user.uid });
+    if (!user) {
+      res.send(errorResponse(401, "Bad request"));
+      return;
+    }
 
     // Convert page and limit to numbers
     const pageNum = parseInt(page as string);
@@ -312,7 +317,7 @@ export const getActiveEvents = async (req: any, res: Response) => {
         query.endDate = { $lt: currentDate };
       }
     }
-
+    query.status = EventStatus.ACTIVE;
     // Apply city filter
     if (city) {
       query.location = city;
@@ -350,7 +355,10 @@ export const getActiveEvents = async (req: any, res: Response) => {
     }
     // Execute query with filters
 
-    const events = await Event.find(query)
+    const events = await Event.find({
+      ...query,
+      "applications.applicantId": { $ne: user._id },
+    })
       .populate("volunteeringDomains")
       .populate("template")
       .populate({

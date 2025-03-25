@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { ApplicationStatus } from "../lib/constants";
+import { ApplicationStatus, EventStatus } from "../lib/constants";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
 import { Application } from "../model/application.schema";
 import { Event } from "../model/event.schema";
@@ -135,8 +135,13 @@ export const getMyActiveApplications = async (req: any, res: Response) => {
       res.send(errorResponse(401, "Unauthorized"));
       return;
     }
-    const today = new Date();
-    const application = await Application.find({ applicantId: user._id })
+    const activeEventIds = await Event.find({
+      status: EventStatus.ACTIVE,
+    }).distinct("_id");
+    const application = await Application.find({
+      applicantId: user._id,
+      eventId: { $in: activeEventIds },
+    })
       .populate({
         path: "eventId",
         model: "Event",

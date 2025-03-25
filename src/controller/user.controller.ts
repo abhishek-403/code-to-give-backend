@@ -86,3 +86,69 @@ export const getUserById = async (req: any, res: Response) => {
     return;
   }
 };
+export const getAllUsers = async (req: any, res: Response) => {
+  try {
+    const { page = "1", limit = "6", city, role, searchQuery } = req.query;
+
+    const pageNumber = parseInt(page as string) || 1;
+    const limitNumber = parseInt(limit as string) || 6;
+    const skip = (pageNumber - 1) * limitNumber;
+
+    let query: any = {};
+
+    if (city) query.city = city;
+    if (role) query.role = role;
+    if (searchQuery) {
+      const sanitizedSearchQuery = searchQuery.replace(/[^a-zA-Z0-9\s]/g, "");
+      const tokens = sanitizedSearchQuery
+        .split(/\s+/)
+        .filter((token: any) => token);
+
+      if (tokens.length > 0) {
+        query.$or = tokens.flatMap((token: any) => [
+          { name: { $regex: token, $options: "i" } },
+          { email: { $regex: token, $options: "i" } },
+        ]);
+      }
+    }
+
+    const users = await User.find(query).skip(skip).limit(limitNumber);
+    const totalUsers = await User.countDocuments(query);
+
+    res.send(
+      successResponse(200, {
+        users,
+        pagination: {
+          total: totalUsers,
+          page: pageNumber,
+          limit: limitNumber,
+          hasMore: totalUsers > skip + users.length,
+        },
+      })
+    );
+  } catch (error) {
+    console.error(error);
+    res.send(errorResponse(500, "Internal server error"));
+  }
+};
+
+export const changeUserRole = async (req: any, res: Response) => {
+  try {
+    const role = req.body.role;
+    const userId = req.body.userId;
+    if (!userId) {
+      res.send(errorResponse(400, "Bad Request"));
+      return;
+    }
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true, runValidators: true }
+    );
+    
+
+    res.send(successResponse(200, "Role changed"));
+  } catch (error) {
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};

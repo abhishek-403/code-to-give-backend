@@ -24,7 +24,9 @@ import {
   volunteerSubmitFeedback,
 } from "./controller/event.controller";
 import {
+  changeUserRole,
   createUser,
+  getAllUsers,
   getUserById,
   googleLogin,
 } from "./controller/user.controller";
@@ -37,6 +39,18 @@ const router = express.Router();
 router.post("/user/google-login", requireUserMiddleware, googleLogin);
 router.get("/user/get-profile", requireUserMiddleware, getUserById);
 router.post("/user/create-user", requireUserMiddleware, createUser);
+router.patch(
+  "/users/change-role",
+  requireUserMiddleware,
+  authorizeRole(UserRole.ADMIN),
+  changeUserRole
+);
+router.get(
+  "/user/get-users",
+  requireUserMiddleware,
+  authorizeRole(UserRole.ADMIN),
+  getAllUsers
+);
 
 // Event routes
 router.post(
@@ -66,7 +80,7 @@ router.put(
 );
 router.get("/event/:id", getEventById);
 router.get("/event-templates", getAllTemplates);
-router.get("/event", getActiveEvents);
+router.get("/event", requireUserMiddleware, getActiveEvents);
 router.get(
   "/volunteer/event/:eventId",
   requireUserMiddleware,
