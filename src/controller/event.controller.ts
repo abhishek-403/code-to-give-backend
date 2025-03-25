@@ -1,9 +1,10 @@
 import { Response } from "express";
 import mongoose from "mongoose";
 import { CreateVolunteeringDomainDto } from "../dto/volunteer-domain.dto";
-import { ApplicationStatus } from "../lib/constants";
+import { ApplicationStatus, EventStatus } from "../lib/constants";
 import { errorResponse, successResponse } from "../lib/responseWrappper";
 import { Event } from "../model/event.schema";
+import { Feedback } from "../model/feedback.schema";
 import { Task } from "../model/task.schema";
 import { TemplateFormModel } from "../model/template.schema";
 import { User } from "../model/user.schema";
@@ -228,6 +229,8 @@ export const editEvent = async (req: any, res: Response) => {
     }
     res.send(successResponse(200, "Event Edited!"));
   } catch (error) {
+    console.log(error);
+
     res.send(errorResponse(500, "Internal Error"));
   }
 };
@@ -416,7 +419,6 @@ export const addTaskToEvent = async (req: any, res: Response) => {
 
     event.tasks = event.tasks || [];
     event.tasks.push(task._id);
-    event.tasks.push(task._id);
     await event.save();
 
     res.send(successResponse(201, "Task added to event successfully"));
@@ -514,6 +516,30 @@ export const getActiveEventsAdmin = async (req: any, res: Response) => {
       .limit(limitNum)
       .sort({ createdAt: -1 });
 
+    // Approach 2: Remove duplicates in application logic
+    // const uniqueTasks = events.map(event => {
+    //   // Use Set with a unique key comparison
+    //   const uniqueTaskIds = new Set();
+    //   event.tasks = event.tasks.filter(task => {
+    //     // Use a unique identifier to filter duplicates
+    //     const isDuplicate = uniqueTaskIds.has(task._id);
+    //     uniqueTaskIds.add(task._id);
+    //     return !isDuplicate;
+    //   });
+    //   return event;
+    // });
+
+    // // Alternative approach
+    // const removeDuplicateTasks = (tasks: Task[]) => {
+    //   return tasks.filter((task, index, self) =>
+    //     index === self.findIndex((t) => t._id === task._id)
+    //   );
+    // };
+
+    // // Usage
+    // events.forEach(event => {
+    //   event.tasks = removeDuplicateTasks(event.tasks);
+    // });
     // Count total filtered events
     const totalEvents = await Event.countDocuments(query);
 
@@ -547,10 +573,144 @@ export const getVolunteerSideEventInfo = async (req: any, res: Response) => {
       res.send(errorResponse(401, "Event Id required"));
       return;
     }
-    const alltasks = await Task.find({ assigedTo: user._id, eventId });
+    const alltasks = await Task.find({
+      assignedTo: user._id?.toString(),
+      eventId,
+    });
+
     res.send(successResponse(200, alltasks));
   } catch (e) {
     console.log(e);
     res.send(errorResponse(500, "Internal Error"));
+  }
+};
+export const updateTaskStatusByVolunteeer = async (req: any, res: Response) => {
+  try {
+    const user = await User.findOne({ uid: req.user.uid });
+    const taskId = req.params.taskId;
+    const newStatus = req.body.status;
+
+    if (!user) {
+      res.send(errorResponse(401, "Unauthorized"));
+      return;
+    }
+    if (!taskId) {
+      res.send(errorResponse(401, "Task Id required"));
+      return;
+    }
+    const task = await Task.findOne({ _id: taskId });
+    if (!task) {
+      res.send(errorResponse(401, "No task"));
+      return;
+    }
+    task.status = newStatus;
+    await task.save();
+
+    res.send(successResponse(200, "Task status updated"));
+  } catch (e) {
+    console.log(e);
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};
+
+export const getVolunteerSideEventHistory = async (req: any, res: Response) => {
+  try {
+    const user = await User.findOne({ uid: req.user.uid });
+    if (!user) {
+      res.send(errorResponse(401, "Unauthorized"));
+      return;
+    }
+    const events = await Event.find({
+      status: EventStatus.COMPLETED,
+      volunteers: { $in: [user._id] },
+    })
+      .populate("volunteeringDomains")
+      .populate({
+        path: "feedbacks",
+        match: { respondentId: user._id },
+        select: "_id",
+        options: { limit: 1 },
+      })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const eventsWithFeedback = events.map((event) => ({
+      ...event,
+      feedbackSubmitted: !!(event.feedbacks && event.feedbacks.length > 0),
+
+      voluneerName: user.displayName,
+      voluneerEmail: user.email,
+    }));
+
+    res.send(successResponse(200, eventsWithFeedback));
+  } catch (error) {
+    console.log(error);
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};
+
+export const volunteerSubmitFeedback = async (req: any, res: Response) => {
+  try {
+    const {
+      eventId,
+      rating,
+      experience,
+      learnings,
+      suggestions,
+      wouldRecommend,
+    } = req.body;
+    const uid = req.user.uid;
+    const user = await User.findOne({ uid });
+
+    if (!user) {
+      res.send(errorResponse(401, "Unauthorized"));
+      return;
+    }
+
+    if (!eventId || !rating || !experience) {
+      res.send(errorResponse(400, "Missing required fields"));
+      return;
+    }
+
+    const event = await Event.findById(eventId);
+    if (!event) {
+      res.send(errorResponse(404, "Event not found"));
+      return;
+    }
+
+    const existingFeedback = await Feedback.findOne({
+      eventId,
+      respondentId: user._id,
+    });
+    if (existingFeedback) {
+      res.send(errorResponse(400, "Feedback already submitted"));
+      return;
+    }
+
+    const newFeedback = await Feedback.create({
+      eventId,
+      respondentId: user._id,
+      rating,
+
+      experience,
+      learnings,
+      suggestions,
+      wouldRecommend,
+    });
+
+    await newFeedback.save();
+    event.feedbacks = event.feedbacks || [];
+    //@ts-ignore
+    event.feedbacks.push(newFeedback._id);
+    await event.save();
+
+    res.send(successResponse(201, "Feedback submitted successfully"));
+
+    return;
+  } catch (error) {
+    console.log(error);
+
+    res.send(errorResponse(500, "Error adding task to event"));
+    return;
   }
 };

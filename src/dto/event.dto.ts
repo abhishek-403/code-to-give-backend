@@ -24,6 +24,7 @@ export interface IEvent extends Document {
   applications?: mongoose.Types.ObjectId[];
   volunteers?: mongoose.Types.ObjectId[];
   tasks?: mongoose.Types.ObjectId[];
+  feedbacks?: mongoose.Types.ObjectId[];
   capacity?: number;
   createdAt: Date;
   updatedAt: Date;

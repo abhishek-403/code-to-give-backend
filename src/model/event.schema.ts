@@ -31,12 +31,13 @@ const EventSchema: Schema = new Schema(
     endDate: {
       type: Date,
       required: true,
-      validate: {
-        validator: function (this: IEvent) {
-          return this.endDate >= this.startDate;
-        },
-        message: "End date must be after or equal to start date",
-      },
+      // validate: {
+      //   validator: function (this: IEvent) {
+      //     if (!this.startDate || !this.endDate) return false;
+      //     return this.endDate >= this.startDate;
+      //   },
+      //   message: "End date must be after or equal to start date",
+      // },
     },
     createdBy: {
       type: Schema.Types.ObjectId,
@@ -70,20 +71,24 @@ const EventSchema: Schema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "TemplateForm",
     },
-    volunteers:[
+    volunteers: [
       {
         type: Schema.Types.ObjectId,
         ref: "User",
         default: [],
       },
     ],
-    tasks:[
+    tasks: [
       {
         type: Schema.Types.ObjectId,
         ref: "Task",
         default: [],
       },
-    ]
+    ],
+    feedbacks: {
+      type: [{ type: Schema.Types.ObjectId, ref: "Feedback" }],
+      default: [],
+    },
   },
   { timestamps: true }
 );
@@ -93,9 +98,9 @@ EventSchema.index({ startDate: 1, endDate: 1 });
 EventSchema.index({ isTemplate: 1 });
 
 // Virtual for checking if event is at capacity
-EventSchema.virtual("isAtCapacity").get(function (this: IEvent) {
-  if (!this.capacity) return false;
-  return this.applications && this.applications.length >= this.capacity;
-});
+// EventSchema.virtual("isAtCapacity").get(function (this: IEvent) {
+//   if (!this.capacity) return false;
+//   return this.applications && this.applications.length >= this.capacity;
+// });
 
 export const Event = mongoose.model<IEvent>("Event", EventSchema);

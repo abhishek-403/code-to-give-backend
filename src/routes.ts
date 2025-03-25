@@ -17,8 +17,11 @@ import {
   getActiveEventsAdmin,
   getAllTemplates,
   getEventById,
+  getVolunteerSideEventHistory,
   getVolunteerSideEventInfo,
   getVolunteeringDomain,
+  updateTaskStatusByVolunteeer,
+  volunteerSubmitFeedback,
 } from "./controller/event.controller";
 import {
   createUser,
@@ -64,7 +67,21 @@ router.put(
 router.get("/event/:id", getEventById);
 router.get("/event-templates", getAllTemplates);
 router.get("/event", getActiveEvents);
-router.get("/volunteer/event/:eventId", requireUserMiddleware, getVolunteerSideEventInfo);
+router.get(
+  "/volunteer/event/:eventId",
+  requireUserMiddleware,
+  getVolunteerSideEventInfo
+);
+router.get(
+  "/volunteer/event-history",
+  requireUserMiddleware,
+  getVolunteerSideEventHistory
+);
+router.post(
+  "/volunteer/event-feedback",
+  requireUserMiddleware,
+  volunteerSubmitFeedback
+);
 router.get(
   "/event-admin",
   requireUserMiddleware,
@@ -76,6 +93,11 @@ router.post(
   requireUserMiddleware,
   authorizeRole(UserRole.WEBMASTER),
   addTaskToEvent
+);
+router.post(
+  "/volunteer/event/task/:taskId",
+  requireUserMiddleware,
+  updateTaskStatusByVolunteeer
 );
 router.delete(
   "/event/:id",

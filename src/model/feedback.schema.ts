@@ -1,4 +1,3 @@
-// Simple Feedback Schema
 import mongoose, { Schema, Document } from "mongoose";
 import { IFeedback } from "../dto/feedback.dto";
 
@@ -16,34 +15,46 @@ const FeedbackSchema: Schema = new Schema(
       required: true,
       index: true,
     },
-    formId: {
-      type: String,
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
       required: true,
       index: true,
+      default: 5, // Default matches frontend state
     },
-    responses: {
-      type: Schema.Types.Mixed, // Flexible schema for any Google Form data structure
+    experience: {
+      type: String,
+      trim: true,
+      required: false,
+    },
+    wouldRecommend: {
+      type: Boolean,
       required: true,
+      default: true, // Matches frontend default value
+    },
+    learnings: {
+      type: String,
+      trim: true,
+      required: false,
+    },
+    suggestions: {
+      type: String,
+      trim: true,
+      required: false,
     },
     submittedAt: {
       type: Date,
       default: Date.now,
       index: true,
     },
-    overallRating: {
-      type: Number,
-      min: 1,
-      max: 5,
-      index: true,
-    },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-// Compound indexes for analytics
+// 🔹 Compound Indexes for Faster Queries
+FeedbackSchema.index({ eventId: 1, respondentId: 1 });
 FeedbackSchema.index({ eventId: 1, submittedAt: 1 });
-FeedbackSchema.index({ eventId: 1, overallRating: 1 });
+FeedbackSchema.index({ eventId: 1, rating: 1 });
 
 export const Feedback = mongoose.model<IFeedback>("Feedback", FeedbackSchema);

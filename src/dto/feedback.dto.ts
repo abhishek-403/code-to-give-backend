@@ -6,7 +6,7 @@ export interface IFeedback extends Document {
   formId: string; 
   responses: Record<string, any>; 
   submittedAt: Date;
-  overallRating?: number;
+  rating: number;
   createdAt: Date;
   updatedAt: Date;
 }
