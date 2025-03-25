@@ -29,14 +29,16 @@ import {
   getAllUsers,
   getUserById,
   googleLogin,
+  updateUserProfile,
 } from "./controller/user.controller";
 import { UserRole } from "./lib/constants";
-import requireUserMiddleware from "./middleware/auth.middleware";
+import requireUserMiddleware, { checkUserMiddleware } from "./middleware/auth.middleware";
 import { authorizeRole } from "./middleware/role.middleware";
 const router = express.Router();
 
 // User Routes
 router.post("/user/google-login", requireUserMiddleware, googleLogin);
+router.put("/user", requireUserMiddleware, updateUserProfile);
 router.get("/user/get-profile", requireUserMiddleware, getUserById);
 router.post("/user/create-user", requireUserMiddleware, createUser);
 router.patch(
@@ -80,9 +82,9 @@ router.put(
 );
 router.get("/event/:id", getEventById);
 router.get("/event-templates", getAllTemplates);
-router.get("/event", requireUserMiddleware, getActiveEvents);
+router.get("/event", checkUserMiddleware, getActiveEvents);
 router.get(
-  "/volunteer/event/:eventId",
+  "/volunteer/event-details/:eventId",
   requireUserMiddleware,
   getVolunteerSideEventInfo
 );
@@ -135,7 +137,7 @@ router.put(
   authorizeRole(UserRole.WEBMASTER),
   updateApplication
 );
-router.get("/event/:id", requireUserMiddleware, getApplication);
+// router.get("/event/:id", requireUserMiddleware, getApplication);
 router.delete(
   "/event/:id",
   requireUserMiddleware,

@@ -294,11 +294,14 @@ export const getActiveEvents = async (req: any, res: Response) => {
       endDate,
       searchQuery,
     } = req.query;
-    const user = await User.findOne({ uid: req.user.uid });
-    if (!user) {
-      res.send(errorResponse(401, "Bad request"));
-      return;
+    let user;
+    if (req.user) {
+      user = await User.findOne({ uid: req.user.uid });
     }
+    // if (!user) {
+    //   res.send(errorResponse(401, "Bad request"));
+    //   return;
+    // }
 
     // Convert page and limit to numbers
     const pageNum = parseInt(page as string);
@@ -355,24 +358,128 @@ export const getActiveEvents = async (req: any, res: Response) => {
     }
     // Execute query with filters
 
-    const events = await Event.find({
-      ...query,
-      "applications.applicantId": { $ne: user._id },
-    })
-      .populate("volunteeringDomains")
-      .populate("template")
-      .populate({
-        path: "applications",
-        // match: { status: ApplicationStatus.PENDING },
-        populate: {
-          path: "volunteeringDomain",
-          model: "VolunteeringDomain",
-        },
-      })
-      .skip(skip)
-      .limit(limitNum)
-      .sort({ createdAt: -1 });
+    let events: any = [];
+    if (user) {
+      events = await Event.aggregate([
+        {
+          $match: {
+            status: EventStatus.ACTIVE,
 
+            ...(city && { location: city }),
+            ...(domain && {
+              volunteeringDomains: {
+                $in: (Array.isArray(domain) ? domain : [domain]).map(
+                  (d) => new mongoose.Types.ObjectId(d)
+                ),
+              },
+            }),
+
+            ...(availability && { availability: { $in: availability } }),
+
+            ...(startDate && {
+              startDate: {
+                $gte: new Date(startDate as string),
+              },
+            }),
+            ...(endDate && {
+              endDate: {
+                $lte: new Date(endDate as string),
+              },
+            }),
+
+            ...(searchQuery && {
+              $or: [
+                { name: new RegExp(searchQuery.toString(), "i") },
+                { description: new RegExp(searchQuery.toString(), "i") },
+                { location: new RegExp(searchQuery.toString(), "i") },
+              ],
+            }),
+          },
+        },
+        {
+          $lookup: {
+            from: "applications",
+            localField: "_id",
+            foreignField: "eventId",
+            as: "userApplications",
+            pipeline: [
+              {
+                $match: {
+                  status: ApplicationStatus.PENDING,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $match: {
+            "userApplications.applicantId": { $ne: user._id },
+          },
+        },
+        {
+          $lookup: {
+            from: "volunteeringdomains",
+            localField: "volunteeringDomains",
+            foreignField: "_id",
+            as: "volunteeringDomains",
+          },
+        },
+        {
+          $lookup: {
+            from: "templateforms",
+            localField: "template",
+            foreignField: "_id",
+            as: "template",
+          },
+        },
+        {
+          $lookup: {
+            from: "applications",
+            localField: "_id",
+            foreignField: "eventId",
+            as: "applications",
+            pipeline: [
+              {
+                $match: {
+                  status: ApplicationStatus.PENDING,
+                },
+              },
+              {
+                $lookup: {
+                  from: "volunteeringdomains",
+                  localField: "volunteeringDomain",
+                  foreignField: "_id",
+                  as: "volunteeringDomain",
+                },
+              },
+              {
+                $unwind: "$volunteeringDomain",
+              },
+            ],
+          },
+        },
+        { $skip: skip },
+        { $limit: limitNum },
+        { $sort: { createdAt: -1 } },
+      ]);
+    } else {
+      events = await Event.find({
+        ...query,
+      })
+        .populate("volunteeringDomains")
+        .populate("template")
+        .populate({
+          path: "applications",
+          // match: { status: ApplicationStatus.PENDING },
+          populate: {
+            path: "volunteeringDomain",
+            model: "VolunteeringDomain",
+          },
+        })
+        .skip(skip)
+        .limit(limitNum)
+        .sort({ createdAt: -1 });
+    }
     // Count total filtered events
     const totalEvents = await Event.countDocuments(query);
 

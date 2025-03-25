@@ -44,6 +44,13 @@ const UserSchema: Schema = new Schema(
       type: [String],
       default: [],
     },
+    volunteeringInterests: [
+      {
+        type: mongoose.Types.ObjectId,
+        ref: "VolunteeringDomain",
+        default: [],
+      },
+    ],
     myApplications: [
       {
         type: mongoose.Schema.Types.ObjectId,

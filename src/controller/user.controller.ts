@@ -73,7 +73,10 @@ export const getUserById = async (req: any, res: Response) => {
       return;
     }
 
-    const user = await User.findOne({ uid });
+    const user = await User.findOne({ uid }).populate({
+      path: "volunteeringInterests",
+      model: "VolunteeringDomain",
+    });
 
     if (!user) {
       res.send(errorResponse(404, "Not found"));
@@ -140,14 +143,36 @@ export const changeUserRole = async (req: any, res: Response) => {
       res.send(errorResponse(400, "Bad Request"));
       return;
     }
-    const updatedUser = await User.findByIdAndUpdate(
+    await User.findByIdAndUpdate(
       userId,
       { role },
       { new: true, runValidators: true }
     );
-    
 
     res.send(successResponse(200, "Role changed"));
+  } catch (error) {
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};
+export const updateUserProfile = async (req: any, res: Response) => {
+  try {
+    const userProfile = req.body;
+    const uid = req.user.uid;
+    if (!uid) {
+      res.send(errorResponse(400, "Bad Request"));
+      return;
+    }
+    const formatted = {
+      ...userProfile,
+      volunteeringInterests: userProfile.volunteeringInterests,
+    };
+    await User.findOneAndUpdate(
+      { uid },
+      { $set: formatted },
+      { new: true, runValidators: true }
+    );
+
+    res.send(successResponse(200, "Profile updated"));
   } catch (error) {
     res.send(errorResponse(500, "Internal Error"));
   }
