@@ -423,7 +423,7 @@ export const addTaskToEvent = async (req: any, res: Response) => {
     return;
   } catch (error) {
     console.log(error);
-    
+
     res.send(errorResponse(500, "Error adding task to event"));
     return;
   }
@@ -500,7 +500,8 @@ export const getActiveEventsAdmin = async (req: any, res: Response) => {
     const events = await Event.find(query)
       .populate("volunteeringDomains")
       .populate("template")
-      .populate("volunteers").populate("tasks")
+      .populate("volunteers")
+      .populate("tasks")
       .populate({
         path: "applications",
         match: { status: ApplicationStatus.PENDING },
@@ -529,6 +530,27 @@ export const getActiveEventsAdmin = async (req: any, res: Response) => {
     );
   } catch (error) {
     console.log(error);
+    res.send(errorResponse(500, "Internal Error"));
+  }
+};
+
+export const getVolunteerSideEventInfo = async (req: any, res: Response) => {
+  try {
+    const user = await User.findOne({ uid: req.user.uid });
+    const eventId = req.params.eventId;
+
+    if (!user) {
+      res.send(errorResponse(401, "Unauthorized"));
+      return;
+    }
+    if (!eventId) {
+      res.send(errorResponse(401, "Event Id required"));
+      return;
+    }
+    const alltasks = await Task.find({ assigedTo: user._id, eventId });
+    res.send(successResponse(200, alltasks));
+  } catch (e) {
+    console.log(e);
     res.send(errorResponse(500, "Internal Error"));
   }
 };

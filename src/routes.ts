@@ -9,7 +9,6 @@ import {
 } from "./controller/application.controller";
 import {
   addTaskToEvent,
-  createBulkEvent,
   createEvent,
   createVolunteeringDomain,
   deleteEvent,
@@ -18,6 +17,7 @@ import {
   getActiveEventsAdmin,
   getAllTemplates,
   getEventById,
+  getVolunteerSideEventInfo,
   getVolunteeringDomain,
 } from "./controller/event.controller";
 import {
@@ -42,12 +42,12 @@ router.post(
   authorizeRole(UserRole.WEBMASTER),
   createEvent
 );
-router.post(
-  "/event-bulk",
-  requireUserMiddleware,
-  authorizeRole(UserRole.WEBMASTER),
-  createBulkEvent
-);
+// router.post(
+//   "/event-bulk",
+//   requireUserMiddleware,
+//   authorizeRole(UserRole.WEBMASTER),
+//   createBulkEvent
+// );
 router.post(
   "/event-volunteering-domain",
   requireUserMiddleware,
@@ -64,6 +64,7 @@ router.put(
 router.get("/event/:id", getEventById);
 router.get("/event-templates", getAllTemplates);
 router.get("/event", getActiveEvents);
+router.get("/volunteer/event/:eventId", requireUserMiddleware, getVolunteerSideEventInfo);
 router.get(
   "/event-admin",
   requireUserMiddleware,
@@ -89,11 +90,21 @@ router.post("/application", requireUserMiddleware, createApplication);
 router.post(
   "/application/:id/status",
   requireUserMiddleware,
+  authorizeRole(UserRole.WEBMASTER),
   updateApplicationStatus
 );
 router.get("/application", requireUserMiddleware, getMyActiveApplications);
-router.put("/application/:id", requireUserMiddleware, updateApplication);
+router.put(
+  "/application/:id",
+  authorizeRole(UserRole.WEBMASTER),
+  updateApplication
+);
 router.get("/event/:id", requireUserMiddleware, getApplication);
-router.delete("/event/:id", requireUserMiddleware, deleteApplication);
+router.delete(
+  "/event/:id",
+  requireUserMiddleware,
+  authorizeRole(UserRole.WEBMASTER),
+  deleteApplication
+);
 
 export default router;
