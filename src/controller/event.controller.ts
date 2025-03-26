@@ -628,7 +628,7 @@ export const getActiveEventsAdmin = async (req: any, res: Response) => {
         populate: {
           path: "respondentId",
           model: "User",
-          // select: "displayName email", 
+          // select: "displayName email",
         },
       })
       .populate({
@@ -700,12 +700,13 @@ export const getVolunteerSideEventInfo = async (req: any, res: Response) => {
       res.send(errorResponse(401, "Event Id required"));
       return;
     }
+    const event = await Event.findById(eventId);
     const alltasks = await Task.find({
       assignedTo: user._id?.toString(),
       eventId,
-    });
+    }).populate("eventId");
 
-    res.send(successResponse(200, alltasks));
+    res.send(successResponse(200, { task: alltasks, event}));
   } catch (e) {
     console.log(e);
     res.send(errorResponse(500, "Internal Error"));
