@@ -32,7 +32,9 @@ import {
   updateUserProfile,
 } from "./controller/user.controller";
 import { UserRole } from "./lib/constants";
-import requireUserMiddleware, { checkUserMiddleware } from "./middleware/auth.middleware";
+import requireUserMiddleware, {
+  checkUserMiddleware,
+} from "./middleware/auth.middleware";
 import { authorizeRole } from "./middleware/role.middleware";
 const router = express.Router();
 
@@ -44,13 +46,13 @@ router.post("/user/create-user", requireUserMiddleware, createUser);
 router.patch(
   "/users/change-role",
   requireUserMiddleware,
-  authorizeRole(UserRole.WEBMASTER),
+  authorizeRole(UserRole.ADMIN),
   changeUserRole
 );
 router.get(
   "/user/get-users",
   requireUserMiddleware,
-  authorizeRole(UserRole.ADMIN),
+  authorizeRole(UserRole.WEBMASTER),
   getAllUsers
 );
 

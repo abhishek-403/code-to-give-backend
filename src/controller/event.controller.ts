@@ -405,7 +405,11 @@ export const getActiveEvents = async (req: any, res: Response) => {
             pipeline: [
               {
                 $match: {
-                  status: ApplicationStatus.PENDING,
+                  $or: [
+                    { status: ApplicationStatus.PENDING },
+                    { status: ApplicationStatus.APPROVED },
+                  ],
+                  applicantId: user._id,
                 },
               },
             ],
@@ -619,6 +623,14 @@ export const getActiveEventsAdmin = async (req: any, res: Response) => {
       .populate("template")
       .populate("volunteers")
       .populate("tasks")
+      .populate({
+        path: "feedbacks",
+        populate: {
+          path: "respondentId",
+          model: "User",
+          // select: "displayName email", 
+        },
+      })
       .populate({
         path: "applications",
         match: { status: ApplicationStatus.PENDING },
