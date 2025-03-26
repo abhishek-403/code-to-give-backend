@@ -44,7 +44,7 @@ router.post("/user/create-user", requireUserMiddleware, createUser);
 router.patch(
   "/users/change-role",
   requireUserMiddleware,
-  authorizeRole(UserRole.ADMIN),
+  authorizeRole(UserRole.WEBMASTER),
   changeUserRole
 );
 router.get(
